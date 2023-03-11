@@ -49,7 +49,10 @@ class lambertian : public material {
         __device__ virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, curandState *local_rand_state) const  {
              vec3 target = rec.p + rec.normal + random_in_unit_sphere(local_rand_state);
              scattered = ray(rec.p, target-rec.p);
+
+             // want to change this so that it alters with the light
              attenuation = albedo;
+
              return true;
         }
 

@@ -8,6 +8,7 @@
 #include "hitable_list.h"
 #include "camera.h"
 #include "material.h"
+#include "light.h"
 
 
 
@@ -22,7 +23,7 @@ void check_cuda(cudaError_t result, char const *const func, const char *const fi
     }
 }
 
-__device__ vec3 color(const ray& r, hitable **world, curandState *local_rand_state) {
+__device__ vec3 color(const ray& r, hitable **world, spotlight ** light, curandState *local_rand_state) {
     ray cur_ray = r;
     vec3 cur_attenuation = vec3(1.0,1.0,1.0);
     for(int i = 0; i < 50; i++) {
@@ -30,12 +31,11 @@ __device__ vec3 color(const ray& r, hitable **world, curandState *local_rand_sta
         if ((*world)->hit(cur_ray, 0.001f, FLT_MAX, rec)) {
             ray scattered;
             vec3 attenuation;
+            vec3 l = (*light)->hit(rec.p, world);
             if(rec.mat->scatter(cur_ray, rec, attenuation, scattered, local_rand_state)) {
                 cur_attenuation *= attenuation;
+                cur_attenuation *= l;
                 cur_ray = scattered;
-            }
-            else {
-                return vec3(0.0,0.0,0.0);
             }
         }
         else {
@@ -59,7 +59,7 @@ __global__ void render_init(int nx, int ny, curandState *state) {
 }
 
 // render
-__global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hitable ** world, curandState *state) {
+__global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hitable ** world, spotlight **light, curandState *state) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
     if ((i >= max_x) || (j >= max_y)) return;
@@ -71,8 +71,8 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     for(int s=0; s < ns; s++) {
         float u = float(i + curand_uniform(&local_rand_state)) / float(max_x);
         float v = float(j + curand_uniform(&local_rand_state)) / float(max_y);
-        ray r = (*cam)->get_ray(u, v);
-        col += color(r, world, &local_rand_state);
+        ray r = (*cam)->get_ray(u, v, &local_rand_state);
+        col += color(r, world, light, &local_rand_state);
     }
 
     state[pixel_index] = local_rand_state;
@@ -86,21 +86,33 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     fb[pixel_index] = col;
 }
 
-__global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam, vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect) {
+__global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam, spotlight **light, int nx, int ny) {
     float r = cos(M_PI/4);
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         d_list[0] = new sphere(vec3(0,0,-1), 0.5,
                                new lambertian(vec3(0.1, 0.2, 0.5)));
         d_list[1] = new sphere(vec3(0,-100.5,-1), 100,
                                new lambertian(vec3(0.8, 0.8, 0.0)));
-        d_list[2] = new sphere(vec3(1,0,-1), 0.5,
-                               new metal(vec3(0.8, 0.6, 0.2), 0.2));
-        d_list[3] = new sphere(vec3(-1,0,-1), .5,
-                               new dielectric(1.5));
-        d_list[4] = new sphere(vec3(-1,0,-1), -0.45,
-                               new dielectric(1.5));
-        *d_world  = new hitable_list(d_list,5);
-        *cam = new camera(lookfrom, lookat, vup, vfov, aspect);
+        // d_list[2] = new sphere(vec3(1,0,-1), 0.5,
+        //                        new metal(vec3(0.8, 0.6, 0.2), 0.2));
+        // d_list[3] = new sphere(vec3(-1,0,-1), .5,
+        //                        new dielectric(1.5));
+        // d_list[4] = new sphere(vec3(-1,0,-1), -0.45,
+        //                        new dielectric(1.5));
+        *d_world  = new hitable_list(d_list,2);
+
+        // set up vectors for camera
+        vec3 lookfrom(-2, 2, 1);
+        vec3 lookat(0, 0, -1);
+        vec3 vup(0, 1, 0);
+        float vfov = 60;
+        float aspect = float(nx)/float(ny);
+        float aperture = 0.1;
+        float focus = (lookfrom - lookat).length();
+
+        *cam = new camera(lookfrom, lookat, vup, vfov, aspect, aperture, focus);
+
+        *light = new spotlight(vec3(2, 2, 1), lookat, 45, 1);
     }
 }
 
@@ -131,9 +143,9 @@ void write_image(std::string filename, vec3 *fb, int nx, int ny) {
 }
 
 int main() {
-    int nx = 1850;
-    int ny = 1000;
-    int ns = 200;
+    int nx = 600;
+    int ny = 300;
+    int ns = 10;
     int tx = 16;
     int ty = 32;
 
@@ -146,21 +158,17 @@ int main() {
 
     // make world
     hitable **d_list;
-    checkCudaErrors(cudaMalloc((void **)&d_list, 4*sizeof(hitable *)));
+    checkCudaErrors(cudaMalloc((void **)&d_list, 2*sizeof(hitable *)));
     hitable **d_world;
     checkCudaErrors(cudaMalloc((void **)&d_world, sizeof(hitable *)));
 
     camera **cam;
     checkCudaErrors(cudaMalloc((void **)&cam, sizeof(camera *)));
 
-    // set up vectors for camera
-    vec3 lookfrom(-2, 2, 1);
-    vec3 lookat(0, 0, -1);
-    vec3 vup(0, 1, 0);
-    float vfov = 25;
-    float aspect = float(nx)/float(ny);
+    spotlight **light;
+    checkCudaErrors(cudaMalloc((void **)&light, sizeof(spotlight *)));
 
-    create_world<<<1,1>>>(d_list,d_world, cam, lookfrom, lookat, vup, vfov, aspect);
+    create_world<<<1,1>>>(d_list,d_world, cam, light, nx, ny);
 
 
     checkCudaErrors(cudaGetLastError());
@@ -175,11 +183,12 @@ int main() {
 
     render_init<<<blocks, threads>>>(nx, ny, d_rand_state);
 
-    render<<<blocks, threads>>>(fb, nx, ny, ns, cam, d_world, d_rand_state);
+    render<<<blocks, threads>>>(fb, nx, ny, ns, cam, d_world, light, d_rand_state);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
 
-    write_image("out.ppm", fb, nx, ny);
+    std::string filename = "out.ppm";
+    write_image(filename, fb, nx, ny);
 
 
     // clean up
