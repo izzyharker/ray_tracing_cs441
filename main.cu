@@ -11,7 +11,6 @@
 #include "light.h"
 
 
-
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
 void check_cuda(cudaError_t result, char const *const func, const char *const file, int const line) {
     if (result) {
@@ -93,13 +92,13 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam,
                                new lambertian(vec3(0.1, 0.2, 0.5)));
         d_list[1] = new sphere(vec3(0,-100.5,-1), 100,
                                new lambertian(vec3(0.8, 0.8, 0.0)));
-        // d_list[2] = new sphere(vec3(1,0,-1), 0.5,
-        //                        new metal(vec3(0.8, 0.6, 0.2), 0.2));
-        // d_list[3] = new sphere(vec3(-1,0,-1), .5,
-        //                        new dielectric(1.5));
+        d_list[2] = new sphere(vec3(1,0,-1), 0.5,
+                               new metal(vec3(0.8, 0.6, 0.2), 0.2));
+        d_list[3] = new sphere(vec3(-1,0,-1), .5,
+                               new dielectric(1.5));
         // d_list[4] = new sphere(vec3(-1,0,-1), -0.45,
         //                        new dielectric(1.5));
-        *d_world  = new hitable_list(d_list,2);
+        *d_world  = new hitable_list(d_list,4);
 
         // set up vectors for camera
         vec3 lookfrom(-2, 2, 1);
@@ -112,7 +111,7 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam,
 
         *cam = new camera(lookfrom, lookat, vup, vfov, aspect, aperture, focus);
 
-        *light = new spotlight(vec3(2, 2, 1), lookat, 45, 1);
+        *light = new spotlight(vec3(2, 2, 1), lookat, 45, .2, 1);
     }
 }
 
@@ -133,9 +132,9 @@ void write_image(std::string filename, vec3 *fb, int nx, int ny) {
             float r = fb[pixel_index][0];
             float g = fb[pixel_index][1];
             float b = fb[pixel_index][2];
-            int ir = int(255.99*r);
-            int ig = int(255.99*g);
-            int ib = int(255.99*b);
+            int ir = min(255, int(255.99*r));
+            int ig = min(255, int(255.99*g));
+            int ib = min(255, int(255.99*b));
             f << ir << " " << ig << " " << ib << "\n";
         }
     }
@@ -158,7 +157,8 @@ int main() {
 
     // make world
     hitable **d_list;
-    checkCudaErrors(cudaMalloc((void **)&d_list, 2*sizeof(hitable *)));
+    int num_hitables = 4;
+    checkCudaErrors(cudaMalloc((void **)&d_list, num_hitables*sizeof(hitable *)));
     hitable **d_world;
     checkCudaErrors(cudaMalloc((void **)&d_world, sizeof(hitable *)));
 

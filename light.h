@@ -11,6 +11,7 @@ class spotlight {
         vec3 point;
         vec3 direction;
         float angle;
+        float intensity;
 
         // feather is the proportion of light at the edge of the spotlight - 
         // 1 = full light, sharp edge, 0 = no light
@@ -26,19 +27,18 @@ class spotlight {
                 if (ang <= angle) {
                     float t = ang/angle;
                     amount = t*feather + (1-t);
-                    return amount*vec3(1, 1, 1);
+                    return intensity*amount*vec3(1, 1, 1);
                 }
-                amount = .1;
-                return amount*vec3(1, 1, 1);
             } 
-            return vec3(.1, .1, .1);
+            return intensity*feather*vec3(1, 1, 1);
         }
 
-        __device__ spotlight(vec3 &p, vec3 &dir, float a, float f) {
+        __device__ spotlight(vec3 &p, vec3 &dir, float a, float f, float i) {
             angle = (a*M_PI)/180;
             feather = f;
             point = p;
             direction = dir;
+            intensity = i;
         }
 };
 
