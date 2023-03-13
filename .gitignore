@@ -6,3 +6,6 @@
 *.fatbin
 .vscode
 tutorial/
+*.ppm
+*.bmp
+*.jpeg
