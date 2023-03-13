@@ -25,15 +25,14 @@ void check_cuda(cudaError_t result, char const *const func, const char *const fi
 __device__ vec3 color(const ray& r, hitable **world, spotlight ** light, curandState *local_rand_state) {
     ray cur_ray = r;
     vec3 cur_attenuation = vec3(1.0,1.0,1.0);
-    for(int i = 0; i < 50; i++) {
+    for(int i = 0; i < 30; i++) {
         hit_record rec;
         if ((*world)->hit(cur_ray, 0.001f, FLT_MAX, rec)) {
             ray scattered;
             vec3 attenuation;
-            vec3 l = (*light)->hit(rec.p, world);
+            vec3 l = (*light)->hit(world, rec, cur_ray);
             if(rec.mat->scatter(cur_ray, rec, attenuation, scattered, local_rand_state)) {
-                cur_attenuation *= attenuation;
-                cur_attenuation *= l;
+                cur_attenuation *= attenuation*l;
                 cur_ray = scattered;
             }
         }
@@ -44,7 +43,7 @@ __device__ vec3 color(const ray& r, hitable **world, spotlight ** light, curandS
             return cur_attenuation * c;
         }
     }
-    return vec3(0.0,0.0,0.0); // exceeded recursion
+    return cur_attenuation; // exceeded recursion
 }
 
 __global__ void render_init(int nx, int ny, curandState *state) {
@@ -85,20 +84,20 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     fb[pixel_index] = col;
 }
 
-__global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam, spotlight **light, int nx, int ny) {
+__global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam, spotlight **light, int nx, int ny, int num) {
     float r = cos(M_PI/4);
     if (threadIdx.x == 0 && blockIdx.x == 0) {
-        d_list[0] = new sphere(vec3(0,0,-1), 0.5,
-                               new lambertian(vec3(0.1, 0.2, 0.5)));
-        d_list[1] = new sphere(vec3(0,-100.5,-1), 100,
+        // d_list[0] = new sphere(vec3(0,0,-1), 0.5,
+        //                        new lambertian(vec3(0.1, 0.2, 0.5)));
+        d_list[0] = new sphere(vec3(0,-100.5,-1), 100,
                                new lambertian(vec3(0.8, 0.8, 0.0)));
-        d_list[2] = new sphere(vec3(1,0,-1), 0.5,
-                               new metal(vec3(0.8, 0.6, 0.2), 0.2));
-        d_list[3] = new sphere(vec3(-1,0,-1), .5,
+        // d_list[2] = new sphere(vec3(1,0,-1), 0.5,
+        //                        new metal(vec3(0.8, 0.6, 0.2), 0.2));
+        d_list[1] = new sphere(vec3(-1,0,-1), .5,
                                new dielectric(1.5));
-        // d_list[4] = new sphere(vec3(-1,0,-1), -0.45,
+        // d_list[2] = new sphere(vec3(-1,0,-1), -0.45,
         //                        new dielectric(1.5));
-        *d_world  = new hitable_list(d_list,4);
+        *d_world  = new hitable_list(d_list,num);
 
         // set up vectors for camera
         vec3 lookfrom(-2, 2, 1);
@@ -145,6 +144,9 @@ int main() {
     int nx = 600;
     int ny = 300;
     int ns = 10;
+    // int nx = 2000;
+    // int ny = 1000;
+    // int ns = 100;
     int tx = 16;
     int ty = 32;
 
@@ -157,7 +159,7 @@ int main() {
 
     // make world
     hitable **d_list;
-    int num_hitables = 4;
+    int num_hitables = 2;
     checkCudaErrors(cudaMalloc((void **)&d_list, num_hitables*sizeof(hitable *)));
     hitable **d_world;
     checkCudaErrors(cudaMalloc((void **)&d_world, sizeof(hitable *)));
@@ -168,7 +170,7 @@ int main() {
     spotlight **light;
     checkCudaErrors(cudaMalloc((void **)&light, sizeof(spotlight *)));
 
-    create_world<<<1,1>>>(d_list,d_world, cam, light, nx, ny);
+    create_world<<<1,1>>>(d_list,d_world, cam, light, nx, ny, num_hitables);
 
 
     checkCudaErrors(cudaGetLastError());
