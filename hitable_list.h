@@ -2,12 +2,16 @@
 #define HITABLELISTH
 
 #include "hitable.h"
+#include "material.h"
+
+class material;
 
 class hitable_list: public hitable  {
     public:
         __device__ hitable_list() {}
         __device__ hitable_list(hitable **l, int n) {list = l; list_size = n; }
         __device__ virtual bool hit(const ray& r, float tmin, float tmax, hit_record& rec) const;
+        __device__ bool hit_light(const ray& r, float tmin, float tmax) const;
         hitable **list;
         int list_size;
 };
@@ -24,6 +28,16 @@ __device__ bool hitable_list::hit(const ray& r, float t_min, float t_max, hit_re
             }
         }
         return hit_anything;
+}
+
+__device__ bool hitable_list::hit_light(const ray& r, float tmin, float tmax) const {
+    hit_record rec;
+    for (int i = 0; i < list_size; i++) {
+        if (list[i]->hit(r, tmin, tmax, rec)) {
+            if (rec.mat->get_id() != DIELECTRIC) return false;
+        }
+    }
+    return true;
 }
 
 #endif

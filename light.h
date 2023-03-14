@@ -42,18 +42,8 @@ class spotlight {
                     shading = 0.0;
                     break;
             };
-
-            if (!(*world)->hit(d, .001, FLT_MAX, rec)) {
-                float amount;
-                float ang = acos(dot(unit_vector(d.B), unit_vector(point - direction)));
-                if (ang <= angle) {
-                    float t = ang/angle;
-                    amount = t*feather + (1-t);
-                    return (intensity*amount + shading)*vec3(1, 1, 1);
-                }
-            } 
-            // TODO - find all the objects in between light and point, not just closest
-            else if (rec.mat->get_id() == DIELECTRIC) {
+            // if we can see the light
+            if ((*world)->hit_light(d, 0.001, FLT_MAX)) {
                 float amount;
                 float ang = acos(dot(unit_vector(d.B), unit_vector(point - direction)));
                 if (ang <= angle) {
@@ -62,6 +52,7 @@ class spotlight {
                     return (intensity*amount + shading)*vec3(1, 1, 1);
                 }
             }
+            // else...
             return (intensity*feather)*vec3(1, 1, 1);
         }
 
