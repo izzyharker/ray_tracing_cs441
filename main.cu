@@ -10,6 +10,8 @@
 #include "material.h"
 #include "light.h"
 #include "rect.h"
+#include "triangle.h"
+#include "rotate.h"
 
 
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
@@ -90,33 +92,34 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam,
     float r = cos(M_PI/4);
     if (threadIdx.x == 0 && blockIdx.x == 0) {
         // d_list[0] = new sphere(vec3(0,-1000,-1), 1000,
-        //                        new lambertian(vec3(0.8, 0.8, 0.0)));
+        //                         new lambertian(vec3(0.8, 0.8, 0.0)));
         // d_list[1] = new xy_rect(1, 3, 1, 3, -2, new lambertian(vec3(.3, .3, .3)));
         // d_list[2] = new xz_rect(1, 3, 1, 3, -2, new lambertian(vec3(.3, .3, .3)));
         // d_list[3] = new yz_rect(1, 3, 1, 3, -2, new lambertian(vec3(.3, .3, .3)));
-        d_list[0] = new yz_rect(0, 555, 0, 555, 555, new lambertian(vec3(.12, .45, .15)));
-        d_list[1] = new yz_rect(0, 555, 0, 555, 0, new lambertian(vec3(.65, .05, .05)));
-        d_list[2] = new xz_rect(0, 555, 0, 555, 555, new lambertian(vec3(.73, .73, .73)));
-        d_list[3] = new xz_rect(0, 555, 0, 555, 0, new lambertian(vec3(.73, .73, .73)));
-        d_list[4] = new xy_rect(0, 555, 0, 555, 555, new lambertian(vec3(.73, .73, .73)));
-        d_list[5] = new box(vec3(130, 0, 65), vec3(295, 165, 230), new lambertian(vec3(.73, .73, .73)));
-        // d_list[0] = 
-
+        // d_list[0] = new yz_rect(0, 555, 0, 555, 555, new lambertian(vec3(.12, .45, .15)));
+        // d_list[1] = new yz_rect(0, 555, 0, 555, 0, new lambertian(vec3(.65, .05, .05)));
+        // d_list[2] = new xz_rect(0, 555, 0, 555, 555, new lambertian(vec3(.73, .73, .73)));
+        // d_list[3] = new xz_rect(0, 555, 0, 555, 0, new lambertian(vec3(.73, .73, .73)));
+        // d_list[4] = new xy_rect(0, 555, 0, 555, 555, new lambertian(vec3(.73, .73, .73)));
+        // d_list[5] = new box(vec3(130, 0, 65), vec3(295, 165, 230), new lambertian(vec3(.73, .73, .73)));
+        //d_list[0] = new x_rotate(new xy_triangle(100, 400, 200, 100, 100, 400, 100, new lambertian(vec3(.8, .8, 0))), 15.);
+        d_list[0] =  new pyramid(vec3(0, 0, 0), vec3(555, 0, 555), 555, new dielectric(1.5));
+        d_list[1] = new yz_rect(-400, 1000, -400, 1000, -200, new lambertian(vec3(.1, .1, .1)));
 
         *d_world  = new hitable_list(d_list,num);
 
         // set up vectors for camera
-        vec3 lookfrom(278, 278, -800);
-        vec3 lookat(278, 278, 0);
+        vec3 lookfrom(500, 700, -800);
+        vec3 lookat(278, 278, 278);
         vec3 vup(0, 1, 0);
-        float vfov = 40;
+        float vfov = 50;
         float aspect = float(nx)/float(ny);
         float aperture = 0.0;
         float focus = (lookfrom - lookat).length();
 
         *cam = new camera(lookfrom, lookat, vup, vfov, aspect, aperture, focus);
 
-        *light = new point_light(vec3(300, 554, 300), vec3(0, -1, 0), 1.0f, 1.0f);
+        *light = new spotlight(vec3(-200, 278, 278), vec3(278, 278, 278), 30, 1.0f, 1.0f);
     }
 }
 
@@ -165,7 +168,7 @@ int main() {
 
     // make world
     hitable **d_list;
-    int num_hitables = 6;
+    int num_hitables = 2;
     checkCudaErrors(cudaMalloc((void **)&d_list, num_hitables*sizeof(hitable *)));
     hitable **d_world;
     checkCudaErrors(cudaMalloc((void **)&d_world, sizeof(hitable *)));
