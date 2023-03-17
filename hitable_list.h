@@ -31,18 +31,14 @@ __device__ bool hitable_list::hit(const ray& r, float t_min, float t_max, hit_re
 }
 
 __device__ bool hitable_list::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
-    hit_record hit_rec;
-    rec.light_index = 1.0f;
+    rec.light_index = 2.0f;
     for (int i = 0; i < list_size; i++) {
-        if (list[i]->hit(r, tmin, tmax, hit_rec)) {
-            if (hit_rec.mat->get_id() != DIELECTRIC) return false;
-            else {
-                rec.light_index = abs(dot(unit_vector(hit_rec.normal), unit_vector(r.B)));
-                rec.mat = hit_rec.mat;
-                rec.p = hit_rec.p;
-                rec.t = hit_rec.t;
-                rec.normal = hit_rec.normal;
-            }
+        if (list[i]->hit(r, tmin, tmax, rec)) {
+            float c = min(1.0f, max(0.0f, dot(unit_vector(rec.normal), unit_vector(r.B))));
+            if (rec.mat->get_id() != DIELECTRIC) return false;
+            // if (c > 1.0) rec.light_index = 1.0f;
+            // else rec.light_index = 0.5f;
+            rec.light_index = c;
         }
     }
     return true;

@@ -105,9 +105,9 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam,
         //d_list[0] = new x_rotate(new xy_triangle(100, 400, 200, 100, 100, 400, 100, new lambertian(vec3(.8, .8, 0))), 15.);
         material *m = new metal(vec3(.7, .5, .3), 0.0f);
         material *d = new dielectric(1.67);
-        d_list[0] = new yz_rect(-400, 1000, -400, 1000, -200, new lambertian(vec3(.1, .1, .1)));
-        d_list[1] = new xz_rect(-200, 1000, -400, 1000, -400, new lambertian(vec3(.1, .1, .1)));
-        d_list[2] = new xy_rect(-200, 1000, -400, 1000, 1000, new lambertian(vec3(.1, .1, .1)));
+        d_list[0] = new yz_rect(-400, 1000, -800, 1000, -200, new lambertian(vec3(.1, .1, .1)));
+        d_list[1] = new xz_rect(-200, 1000, -400, 1000, -800, new lambertian(vec3(.1, .1, .1)));
+        d_list[2] = new xy_rect(-200, 1000, -800, 1000, 1000, new lambertian(vec3(.1, .1, .1)));
         // d_list[3] =  new pyramid(vec3(0, 0, 0), vec3(555, 0, 555), 555, d);
         d_list[3] = new yz_triangle(0, 555, 555.0/2, 0, 0, 555, 555.0/2, d);
 

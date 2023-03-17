@@ -28,8 +28,12 @@ class spotlight {
             ray d(obj_rec.p, point - obj_rec.p);
             // if we can see the light
             if ((*world)->hit_light(d, 0.001, FLT_MAX, rec)) {
-                // n = rec.light_index;
-                n = .167f;
+                // always giving me 1
+                n = rec.light_index;
+                // if (rec.mat->get_id() == DIELECTRIC) {
+                //     n = dot(unit_vector(d.B), unit_vector(rec.normal));
+                // }
+
                 float amount;
                 float ang = acos(dot(unit_vector(d.B), unit_vector(point - direction)));
                 if (ang <= angle) {
@@ -41,17 +45,17 @@ class spotlight {
 
                     float t = ang/angle;
                     amount = t*feather + (1-t);
-                    // if (rec.mat->get_id() == DIELECTRIC) {
-                        if (n <= .33) { // blue -> red
+                    if (n <= 1.0f) {
+                        if (n <= .33f && n >= 0.0f) { // blue -> red
                             return intensity*amount*vec3(1*(1-3*n), 0, 1*(3*n));
                         }
-                        else if (n < 0.66) { // green -> blue
-                            return intensity*amount*vec3(0, 1*(3*n-1), 1*(2-3*n));
+                        else if (n < 0.66f && n >= 0.0f) { // green -> blue
+                            return intensity*amount*vec3(0, abs(1*(3*n-1)), 1*(2-3*n));
                         }
-                        else { // red -> green
-                            return intensity*amount*vec3(1*(3*n-2), 1*(3-3*n), 0);
+                        else if (n <= 1.0f && n >= 0.0f) { // red -> green
+                            return intensity*amount*vec3(abs(1*(3*n-2)), 1*(3-3*n), 0);
                         }
-                    // }
+                    }
                     return intensity*amount*vec3(1, 1, 1);
                 }
             }
@@ -67,7 +71,7 @@ class spotlight {
             point = p;
             direction = dir;
             intensity = i;
-            n = 1.0f;
+            n = 2.0f;
         }
 };
 
