@@ -12,7 +12,7 @@ class xy_triangle : public hitable {
     public:
         __device__ xy_triangle(float x0, float x1, float x2, float y0, float y1, float y2, float k, material *mat) : x0(x0), x1(x1), x2(x2), y0(y0), y1(y1), y2(y2), k(k), mat(mat) {};
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const;
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const;
 
         float x0, x1, x2, y0, y1, y2, k;
         material *mat;
@@ -38,7 +38,7 @@ __device__ bool xy_triangle::hit(const ray& r, float t0, float t1, hit_record& r
 }
 
 
-__device__ bool xy_triangle::hit_light(const ray& r, float tmin, float tmax) const {
+__device__ bool xy_triangle::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
     return false;
 }
 
@@ -46,7 +46,7 @@ class xz_triangle : public hitable {
     public:
         __device__ xz_triangle(float x0, float x1, float x2, float z0, float z1, float z2, float k, material *mat) : x0(x0), x1(x1), x2(x2), z0(z0), z1(z1), z2(z2), k(k), mat(mat) {};
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const;
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const;
 
         float x0, x1, x2, z0, z1, z2, k;
         material *mat;
@@ -72,7 +72,7 @@ __device__ bool xz_triangle::hit(const ray& r, float t0, float t1, hit_record& r
 }
 
 
-__device__ bool xz_triangle::hit_light(const ray& r, float tmin, float tmax) const {
+__device__ bool xz_triangle::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
     return false;
 }
 
@@ -80,7 +80,7 @@ class yz_triangle : public hitable {
     public:
         __device__ yz_triangle(float z0, float z1, float z2, float y0, float y1, float y2, float k, material *mat) : z0(z0), z1(z1), z2(z2), y0(y0), y1(y1), y2(y2), k(k), mat(mat) {};
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const;
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const;
 
         float z0, z1, z2, y0, y1, y2, k;
         material *mat;
@@ -106,7 +106,7 @@ __device__ bool yz_triangle::hit(const ray& r, float t0, float t1, hit_record& r
 }
 
 
-__device__ bool yz_triangle::hit_light(const ray& r, float tmin, float tmax) const {
+__device__ bool yz_triangle::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
     return false;
 }
 
@@ -114,7 +114,7 @@ class pyramid : public hitable {
     public:
         __device__ pyramid(vec3 p0, vec3 p1, float height, material *m);
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
-        __device__ virtual bool hit_light(const ray& r, float t0, float t1) const { return false; };
+        __device__ virtual bool hit_light(const ray& r, float t0, float t1, hit_record &rec) const { return false; };
 
         hitable_list * list;
         // ???

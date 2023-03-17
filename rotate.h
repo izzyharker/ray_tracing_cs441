@@ -17,7 +17,7 @@ class x_rotate : public hitable {
         };
 
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record & rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const { return false; };
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const { return false; };
 
         hitable *ptr;
         float sin_theta;
@@ -59,7 +59,7 @@ class y_rotate : public hitable {
         };
 
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record & rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const { return false; };
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const { return false; };
 
         hitable *ptr;
         float sin_theta;
@@ -102,7 +102,7 @@ class z_rotate : public hitable {
         };
 
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record & rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const { return false; };
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const { return false; };
 
         hitable *ptr;
         float sin_theta;
@@ -135,7 +135,7 @@ class translate : public hitable {
     public:
         __device__ translate(hitable *p, const vec3 off) : ptr(p), offset(off) {};
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record& rec) const;
-        __device__ virtual bool hit_light(const ray& r, float t0, float t1) const { return false; }
+        __device__ virtual bool hit_light(const ray& r, float t0, float t1, hit_record &rec) const { return false; }
 
         hitable *ptr;
         vec3 offset;

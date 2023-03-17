@@ -8,7 +8,7 @@ class xy_rect: public hitable  {
     public:
         __device__ xy_rect(float x0, float x1, float y0, float y1, float k, material *mat) : x0(x0), x1(x1), y0(y0), y1(y1), k(k), m(mat) {};
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const;
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const;
 
 
         material *m;
@@ -30,7 +30,7 @@ __device__ bool xy_rect::hit(const ray& r, float t0, float t1, hit_record& rec) 
 }
 
 
-__device__ bool xy_rect::hit_light(const ray& r, float tmin, float tmax) const {
+__device__ bool xy_rect::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
     return false;
 }
 
@@ -39,7 +39,7 @@ class xz_rect: public hitable  {
     public:
         __device__ xz_rect(float x0, float x1, float z0, float z1, float k, material *mat) : x0(x0), x1(x1), z0(z0), z1(z1), k(k), m(mat) {};
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const;
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const;
 
 
         material *m;
@@ -61,7 +61,7 @@ __device__ bool xz_rect::hit(const ray& r, float t0, float t1, hit_record& rec) 
 }
 
 
-__device__ bool xz_rect::hit_light(const ray& r, float tmin, float tmax) const {
+__device__ bool xz_rect::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
     return false;
 }
 
@@ -69,7 +69,7 @@ class yz_rect: public hitable  {
     public:
         __device__ yz_rect(float z0, float z1, float y0, float y1, float k, material *mat) : z0(z0), z1(z1), y0(y0), y1(y1), k(k), m(mat) {};
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
-        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax) const;
+        __device__ virtual bool hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const;
 
 
         material *m;
@@ -91,7 +91,7 @@ __device__ bool yz_rect::hit(const ray& r, float t0, float t1, hit_record& rec) 
 }
 
 
-__device__ bool yz_rect::hit_light(const ray& r, float tmin, float tmax) const {
+__device__ bool yz_rect::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
     return false;
 }
 
@@ -105,12 +105,12 @@ class flip_normals : public hitable {
             }
             return false;
         }
-        __device__ virtual bool hit_light(const ray& r, float t0, float t1) const;
+        __device__ virtual bool hit_light(const ray& r, float t0, float t1, hit_record &rec) const;
 
         hitable *ptr;
 };
 
-__device__ bool flip_normals::hit_light(const ray& r, float tmin, float tmax) const {
+__device__ bool flip_normals::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
     return false;
 }
 
@@ -119,7 +119,7 @@ class box : public hitable {
         __device__ box() {};
         __device__ box(const vec3& p0, const vec3& p1, material *ptr);
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
-        __device__ virtual bool hit_light(const ray& r, float t0, float t1) const;
+        __device__ virtual bool hit_light(const ray& r, float t0, float t1, hit_record &rec) const;
 
         vec3 pmin, pmax;
         hitable *list_ptr;
@@ -142,7 +142,7 @@ __device__ bool box::hit(const ray& r, float t0, float t1, hit_record &rec) cons
     return list_ptr->hit(r, t0, t1, rec);
 };
 
-__device__ bool box::hit_light(const ray& r, float tmin, float tmax) const {
+__device__ bool box::hit_light(const ray& r, float tmin, float tmax, hit_record &rec) const {
     return false;
 }
 
