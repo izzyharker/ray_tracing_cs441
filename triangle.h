@@ -120,7 +120,6 @@ class pyramid : public hitable {
         // ???
 };
 
-// TODO
 __device__ pyramid::pyramid(vec3 p0, vec3 p1, float height, material *m) {
     // finish this
     hitable ** sides = new hitable*[5];

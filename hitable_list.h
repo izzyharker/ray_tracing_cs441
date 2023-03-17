@@ -34,7 +34,8 @@ __device__ bool hitable_list::hit_light(const ray& r, float tmin, float tmax) co
     hit_record rec;
     for (int i = 0; i < list_size; i++) {
         if (list[i]->hit(r, tmin, tmax, rec)) {
-            if (rec.mat->get_id() != DIELECTRIC) return false;
+            // if (rec.mat->get_id() != DIELECTRIC) return false;
+            return false;
         }
     }
     return true;

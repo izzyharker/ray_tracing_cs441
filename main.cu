@@ -35,7 +35,8 @@ __device__ vec3 color(const ray& r, hitable **world, spotlight ** light, curandS
             vec3 attenuation;
             vec3 l = (*light)->hit(world, rec, cur_ray);
             if(rec.mat->scatter(cur_ray, rec, attenuation, scattered, local_rand_state)) {
-                cur_attenuation *= attenuation*l;
+                cur_attenuation *= attenuation;
+                cur_attenuation *= l;
                 cur_ray = scattered;
             }
         }
@@ -108,18 +109,20 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam,
 
         *d_world  = new hitable_list(d_list,num);
 
-        // set up vectors for camera
-        vec3 lookfrom(500, 700, -800);
+        // // set up vectors for camera
+        vec3 lookfrom(600, 278, -600);
         vec3 lookat(278, 278, 278);
         vec3 vup(0, 1, 0);
-        float vfov = 50;
+        float vfov = 100;
         float aspect = float(nx)/float(ny);
         float aperture = 0.0;
         float focus = (lookfrom - lookat).length();
 
         *cam = new camera(lookfrom, lookat, vup, vfov, aspect, aperture, focus);
 
-        *light = new spotlight(vec3(-200, 278, 278), vec3(278, 278, 278), 30, 1.0f, 1.0f);
+        *light = new spotlight(vec3(600, 278, 278), vec3(278, 278, 278), 15.0f, 0.2f, 1.2f);
+        // *light = new spotlight(vec3(2, 2, 1), lookat, 45, .2, 1);
+        // *light = new spotlight(lookfrom, lookat, 30.0f, 0.2f, 1.2f);
     }
 }
 
@@ -153,7 +156,7 @@ int main() {
     int nx = 600;
     int ny = 300;
     int ns = 10;
-    // int nx = 2000;
+    // int nx = 1850;
     // int ny = 1000;
     // int ns = 100;
     int tx = 16;

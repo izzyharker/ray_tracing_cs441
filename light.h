@@ -29,18 +29,18 @@ class spotlight {
                 float amount;
                 float ang = acos(dot(unit_vector(d.B), unit_vector(point - direction)));
                 if (ang <= angle) {
-                    float shading = 0.0;
+                    // float shading = 0.0;
                     // float ks = 2;
                     // vec3 refl = unit_vector(2*dot(unit_vector(d.B), unit_vector(obj_rec.normal))*obj_rec.normal - d.B);
                     // vec3 view = unit_vector(r.B);
                     // shading = ks*max(0.0f, pow(abs(dot(refl, view)), 50.5));
                     float t = ang/angle;
                     amount = t*feather + (1-t);
-                    return (intensity*amount + shading)*vec3(1, 1, 1);
+                    return intensity*amount*vec3(1, 1, 1);
                 }
             }
             // else...
-            return 0.5f*vec3(1, 1, 1);
+            return intensity*feather*(vec3(1, 1, 1));
         }
 
         __device__ spotlight(vec3 &p, vec3 &dir, float a, float f, float i) {
