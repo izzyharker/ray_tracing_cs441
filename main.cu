@@ -88,32 +88,8 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     fb[pixel_index] = col;
 }
 
-__global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam, spotlight **light, int nx, int ny, int num) {
-    float r = cos(M_PI/4);
+__global__ void create_world(camera ** cam, spotlight **light, int nx, int ny) {
     if (threadIdx.x == 0 && blockIdx.x == 0) {
-        // d_list[0] = new sphere(vec3(0,-1000,-1), 1000,
-        //                         new lambertian(vec3(0.8, 0.8, 0.0)));
-        // d_list[1] = new xy_rect(1, 3, 1, 3, -2, new lambertian(vec3(.3, .3, .3)));
-        // d_list[2] = new xz_rect(1, 3, 1, 3, -2, new lambertian(vec3(.3, .3, .3)));
-        // d_list[3] = new yz_rect(1, 3, 1, 3, -2, new lambertian(vec3(.3, .3, .3)));
-        // d_list[0] = new yz_rect(0, 555, 0, 555, 555, new lambertian(vec3(.12, .45, .15)));
-        // d_list[1] = new yz_rect(0, 555, 0, 555, 0, new lambertian(vec3(.65, .05, .05)));
-        // d_list[2] = new xz_rect(0, 555, 0, 555, 555, new lambertian(vec3(.73, .73, .73)));
-        // d_list[3] = new xz_rect(0, 555, 0, 555, 0, new lambertian(vec3(.73, .73, .73)));
-        // d_list[4] = new xy_rect(0, 555, 0, 555, 555, new lambertian(vec3(.73, .73, .73)));
-        // d_list[5] = new box(vec3(130, 0, 65), vec3(295, 165, 230), new lambertian(vec3(.73, .73, .73)));
-        //d_list[0] = new x_rotate(new xy_triangle(100, 400, 200, 100, 100, 400, 100, new lambertian(vec3(.8, .8, 0))), 15.);
-        material *m = new metal(vec3(.7, .5, .3), 0.0f);
-        material *d = new dielectric(1.67);
-        d_list[0] = new yz_rect(-400, 1000, -800, 1000, -200, new lambertian(vec3(.1, .1, .1)));
-        d_list[1] = new xz_rect(-200, 1000, -400, 1000, -800, new lambertian(vec3(.1, .1, .1)));
-        d_list[2] = new xy_rect(-200, 1000, -800, 1000, 1000, new lambertian(vec3(.1, .1, .1)));
-        // d_list[3] =  new pyramid(vec3(0, 0, 0), vec3(555, 0, 555), 555, d);
-        d_list[3] = new yz_triangle(0, 555, 555.0/2, 0, 0, 555, 555.0/2, d);
-
-
-        *d_world  = new hitable_list(d_list,num);
-
         // // set up vectors for camera
         vec3 lookfrom(600, 278, -600);
         vec3 lookat(278, 278, 278);
@@ -125,17 +101,36 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera ** cam,
 
         *cam = new camera(lookfrom, lookat, vup, vfov, aspect, aperture, focus);
 
-        *light = new spotlight(vec3(600, 555, 278), vec3(278, 400, 278), 45.0f, 0.7f, 2.0f);
+        *light = new spotlight(vec3(600, 555, 278), vec3(278, 400, 278), 45.0f, 0.5f, 2.5f);
         // *light = new spotlight(vec3(2, 2, 1), lookat, 45, .2, 1);
         // *light = new spotlight(lookfrom, lookat, 30.0f, 0.2f, 1.2f);
     }
 }
 
-__global__ void free_world(hitable **d_list, hitable ** d_world, camera ** cam) {
-    delete *(d_list);
-    delete *(d_list + 1);
+__global__ void create_pyramid(hitable **d_list, hitable **d_world, int num, float degrees) {
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        material *m = new metal(vec3(.7, .5, .3), 0.0f);
+        material *d = new dielectric(1.67);
+        d_list[0] = new yz_rect(-400, 1000, -800, 1000, -200, new lambertian(vec3(.1, .1, .1)));
+        d_list[1] = new xz_rect(-200, 1000, -400, 1000, -800, new lambertian(vec3(.1, .1, .1)));
+        d_list[2] = new xy_rect(-200, 1000, -800, 1000, 1000, new lambertian(vec3(.1, .1, .1)));
+        d_list[3] =  new translate(new y_rotate(new translate(new pyramid(vec3(0, 0, 0), vec3(555, 0, 555), 555, d), -vec3(555.0f/2, 0, 555.0f/2)), degrees, false), vec3(555.0f/2, 0, 555.0f/2));
+        // d_list[3] = new translate(new y_rotate(new translate(new yz_triangle(0, 555, 555.0/2, 0, 0, 555, 555.0/2, d), -vec3(555.0/2, 0, 555.0/2)), 0, false), vec3(555.0/2, 0, 555.0/2));
+
+        *d_world  = new hitable_list(d_list,num);
+    }
+}
+
+__global__ void free_world(hitable **d_list, hitable ** d_world, int num) {
+    for (int i = 0; i < num; i++) {
+        delete *(d_list + i);
+    }
     delete *d_world;
+}
+
+__global__ void free_cam(camera **cam, spotlight** light) {
     delete *cam;
+    delete *light;
 }
 
 void write_image(std::string filename, vec3 *fb, int nx, int ny) {
@@ -148,9 +143,9 @@ void write_image(std::string filename, vec3 *fb, int nx, int ny) {
             float r = fb[pixel_index][0];
             float g = fb[pixel_index][1];
             float b = fb[pixel_index][2];
-            int ir = min(255, int(255.99*r));
-            int ig = min(255, int(255.99*g));
-            int ib = min(255, int(255.99*b));
+            int ir = max(0, min(255, int(255.99*r)));
+            int ig = max(0, min(255, int(255.99*g)));
+            int ib = max(0, min(255, int(255.99*b)));
             f << ir << " " << ig << " " << ib << "\n";
         }
     }
@@ -158,12 +153,12 @@ void write_image(std::string filename, vec3 *fb, int nx, int ny) {
 }
 
 int main() {
-    int nx = 600;
-    int ny = 300;
+    // int nx = 600;
+    // int ny = 300;
     // int ns = 10;
-    // int nx = 1850;
-    // int ny = 1000;
-    int ns = 100;
+    int nx = 1850;
+    int ny = 1000;
+    int ns = 200;
     int tx = 16;
     int ty = 32;
 
@@ -187,7 +182,7 @@ int main() {
     spotlight **light;
     checkCudaErrors(cudaMalloc((void **)&light, sizeof(spotlight *)));
 
-    create_world<<<1,1>>>(d_list,d_world, cam, light, nx, ny, num_hitables);
+    create_world<<<1,1>>>(cam, light, nx, ny);
 
 
     checkCudaErrors(cudaGetLastError());
@@ -202,20 +197,40 @@ int main() {
 
     render_init<<<blocks, threads>>>(nx, ny, d_rand_state);
 
-    render<<<blocks, threads>>>(fb, nx, ny, ns, cam, d_world, light, d_rand_state);
-    checkCudaErrors(cudaGetLastError());
-    checkCudaErrors(cudaDeviceSynchronize());
+    int i = 150;
+    // in for loop 
+    // for (int i = 0; i < 240; i++) {
+        float angle = float(i)*1.5f;
 
-    std::string filename = "out.ppm";
-    write_image(filename, fb, nx, ny);
+        create_pyramid<<<1, 1>>>(d_list, d_world, num_hitables, angle);
 
+        checkCudaErrors(cudaGetLastError());
+        checkCudaErrors(cudaDeviceSynchronize());
+
+        render<<<blocks, threads>>>(fb, nx, ny, ns, cam, d_world, light, d_rand_state);
+        checkCudaErrors(cudaGetLastError());
+        checkCudaErrors(cudaDeviceSynchronize());
+
+        char filename[25];
+        // sprintf(filename, "video/frame%04d.ppm", i);
+        sprintf(filename, "frame%04d.ppm", i);
+        write_image(filename, fb, nx, ny);
+
+        if (i % 20 == 0) std::cout << "wrote frame " << i << std::endl;
+
+        free_world<<<1, 1>>>(d_list, d_world, num_hitables);
+        checkCudaErrors(cudaDeviceSynchronize());
+        // end for loop
+    // }
 
     // clean up
     checkCudaErrors(cudaDeviceSynchronize());
-    free_world<<<1,1>>>(d_list,d_world, cam);
+    free_cam<<<1,1>>>(cam, light);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaFree(d_list));
     checkCudaErrors(cudaFree(d_world));
+    checkCudaErrors(cudaFree(cam));
+    checkCudaErrors(cudaFree(light));
     checkCudaErrors(cudaFree(fb));
 
     // useful for cuda-memcheck --leak-check full

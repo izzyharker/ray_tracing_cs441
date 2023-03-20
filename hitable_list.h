@@ -34,11 +34,14 @@ __device__ bool hitable_list::hit_light(const ray& r, float tmin, float tmax, hi
     rec.light_index = 2.0f;
     for (int i = 0; i < list_size; i++) {
         if (list[i]->hit(r, tmin, tmax, rec)) {
-            float c = min(1.0f, max(0.0f, dot(unit_vector(rec.normal), unit_vector(r.B))));
+            float c = min(1.0f, abs(dot(unit_vector(rec.normal), unit_vector(r.B))));
             if (rec.mat->get_id() != DIELECTRIC) return false;
             // if (c > 1.0) rec.light_index = 1.0f;
             // else rec.light_index = 0.5f;
-            rec.light_index = c;
+            if (c >= M_PI/30 && c <= M_PI/15) {
+                rec.light_index = (c-M_PI/30)*30/M_PI;
+            }
+            else rec.light_index = 1.5;
         }
     }
     return true;

@@ -7,6 +7,7 @@
 #include "rotate.h"
 
 class material;
+class hitable_list;
 
 class xy_triangle : public hitable {
     public:
@@ -115,6 +116,9 @@ class pyramid : public hitable {
         __device__ pyramid(vec3 p0, vec3 p1, float height, material *m);
         __device__ virtual bool hit(const ray& r, float t0, float t1, hit_record &rec) const;
         __device__ virtual bool hit_light(const ray& r, float t0, float t1, hit_record &rec) const { return false; };
+        __device__ ~pyramid() {
+            for (int i = 0; i < 5; i++) delete (list + i);
+        }
 
         hitable_list * list;
         // ???

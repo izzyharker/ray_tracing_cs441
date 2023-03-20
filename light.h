@@ -47,15 +47,16 @@ class spotlight {
                     amount = t*feather + (1-t);
                     if (n <= 1.0f) {
                         if (n <= .33f && n >= 0.0f) { // blue -> red
-                            return intensity*amount*vec3(1*(1-3*n), 0, 1*(3*n));
+                            return 1.2f*intensity*amount*vec3(1*(1-3*n), .1, 1*(3*n));
                         }
                         else if (n < 0.66f && n >= 0.0f) { // green -> blue
-                            return intensity*amount*vec3(0, abs(1*(3*n-1)), 1*(2-3*n));
+                            return 1.2f*intensity*amount*vec3(.1, abs(1*(3*n-1)), 1*(2-3*n));
                         }
                         else if (n <= 1.0f && n >= 0.0f) { // red -> green
-                            return intensity*amount*vec3(abs(1*(3*n-2)), 1*(3-3*n), 0);
+                            return 1.2f*intensity*amount*vec3(abs(1*(3*n-2)), 1*(3-3*n), .1);
                         }
                     }
+                    else if (n < 2.0f) return intensity*amount*1.0f*vec3(1, 1, 1);
                     return intensity*amount*vec3(1, 1, 1);
                 }
             }
