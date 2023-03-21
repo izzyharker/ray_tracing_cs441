@@ -26,7 +26,7 @@ __device__ bool xy_triangle::hit(const ray& r, float t0, float t1, hit_record& r
     float x = r.origin().x() + t*r.direction().x();
     float y = r.origin().y() + t*r.direction().y();
 
-    // stack exchange post on barycentric coordinates
+    // from stack exchange post on barycentric coordinates
     float area = 0.5 *(-x0*x2 + y0*(-x1 + x2) + x0*(y1 - y2) + x1*y2);
     float s = s = 1/(2*area)*(y0*x2 - x0*y2 + (y2 - y0)*x + (x0 - x2)*y);
     float u = 1/(2*area)*(x0*y1 - y0*x1 + (y0 - y1)*x + (x1 - x0)*y);
@@ -60,7 +60,7 @@ __device__ bool xz_triangle::hit(const ray& r, float t0, float t1, hit_record& r
     float x = r.origin().x() + t*r.direction().x();
     float z = r.origin().z() + t*r.direction().z();
 
-    // stack exchange post on barzcentric coordinates
+    // from stack exchange post on barycentric coordinates
     float area = 0.5 *(-x0*x2 + z0*(-x1 + x2) + x0*(z1 - z2) + x1*z2);
     float s = s = 1/(2*area)*(z0*x2 - x0*z2 + (z2 - z0)*x + (x0 - x2)*z);
     float u = 1/(2*area)*(x0*z1 - z0*x1 + (z0 - z1)*x + (x1 - x0)*z);
@@ -94,7 +94,7 @@ __device__ bool yz_triangle::hit(const ray& r, float t0, float t1, hit_record& r
     float z = r.origin().z() + t*r.direction().z();
     float y = r.origin().y() + t*r.direction().y();
 
-    // stack exchange post on barycentric coordinates
+    // from stack exchange post on barycentric coordinates
     float area = 0.5 *(-z0*z2 + y0*(-z1 + z2) + z0*(y1 - y2) + z1*y2);
     float s = s = 1/(2*area)*(y0*z2 - z0*y2 + (y2 - y0)*z + (z0 - z2)*y);
     float u = 1/(2*area)*(z0*y1 - y0*z1 + (y0 - y1)*z + (z1 - z0)*y);
@@ -120,12 +120,12 @@ class pyramid : public hitable {
             for (int i = 0; i < 5; i++) delete (list + i);
         }
 
+        // list of all the sides of the pyramid
         hitable_list * list;
-        // ???
 };
 
 __device__ pyramid::pyramid(vec3 p0, vec3 p1, float height, material *m) {
-    // finish this
+    // initializes a pyramid with base rect (p0, p1) and height
     hitable ** sides = new hitable*[5];
     float x_avg = (p1.x() - p0.x()) / 2;
     float z_avg = (p1.z() - p0.z()) / 2;

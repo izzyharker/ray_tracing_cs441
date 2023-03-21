@@ -9,3 +9,5 @@ tutorial/
 *.ppm
 *.bmp
 *.jpeg
+bmp/
+video/

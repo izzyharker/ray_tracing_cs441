@@ -28,8 +28,9 @@ class spotlight {
             ray d(obj_rec.p, point - obj_rec.p);
             // if we can see the light
             if ((*world)->hit_light(d, 0.001, FLT_MAX, rec)) {
-                // always giving me 1
                 n = rec.light_index;
+
+                // this was segfaulting for some reason...
                 // if (rec.mat->get_id() == DIELECTRIC) {
                 //     n = dot(unit_vector(d.B), unit_vector(rec.normal));
                 // }
@@ -37,6 +38,8 @@ class spotlight {
                 float amount;
                 float ang = acos(dot(unit_vector(d.B), unit_vector(point - direction)));
                 if (ang <= angle) {
+
+                    // ?????????
                     // float shading = 0.0;
                     // float ks = 2;
                     // vec3 refl = unit_vector(2*dot(unit_vector(d.B), unit_vector(obj_rec.normal))*obj_rec.normal - d.B);
@@ -60,7 +63,6 @@ class spotlight {
                     return intensity*amount*vec3(1, 1, 1);
                 }
             }
-            // else...
             if (feather <= .1) {
                 return intensity*feather*(vec3(1, 1, 1));
             } else return intensity*0.1f*(vec3(1, 1, 1));
@@ -76,8 +78,9 @@ class spotlight {
         }
 };
 
-struct hit_record;
-
+/*
+point_light is a spotlight with a view angle of 360 degrees
+*/
 class point_light : public spotlight {
     public:
         vec3 point;
@@ -94,16 +97,19 @@ class point_light : public spotlight {
         __device__ vec3 hit(hitable ** world, hit_record & obj_rec, const ray& r) {
             hit_record rec;
             ray d(obj_rec.p, point - obj_rec.p);
+
             // if we can see the light
             if ((*world)->hit_light(d, 0.001, FLT_MAX, rec)) {
                 float amount;
                 float ang = acos(dot(unit_vector(d.B), unit_vector(point - direction)));
                 float shading = 0.0;
+
                 // ???? shading just. doesnt work like its suposed to
                 // float ks = 2;
                 // vec3 refl = unit_vector(2*dot(unit_vector(d.B), unit_vector(obj_rec.normal))*obj_rec.normal - d.B);
                 // vec3 view = unit_vector(r.B);
                 // shading = ks*max(0.0f, pow(abs(dot(refl, view)), 50.5));
+
                 float t = ang/angle;
                 amount = t*feather + (1-t);
                 return (intensity*amount + shading)*vec3(1, 1, 1);

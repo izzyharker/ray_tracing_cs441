@@ -1,10 +1,13 @@
 vid=test
 
-all: clean build run convert test
+all: clean build run convert
 
-video: clean build-video run convert-video generate-video
+video: clean-video build-video run convert-video generate-video
 
 clean:
+	rm *.ppm
+
+clean-video:
 	rm -Rf video/
 	rm $(vid).mp4
 
@@ -13,9 +16,20 @@ build-video:
 	mkdir -p video/
 	nvcc -o main main.cu
 
+build:
+	@echo "Compiling"
+	nvcc -o main main.cu -DIMAGE
+
 run:
 	@echo "Running"
 	./main
+
+convert:
+	@echo "Converting frame to BMP"
+	for f in *.ppm ; do \
+		echo "$$f >> $${f/ppm/bmp}"; \
+		ppmtobmp $$f >> $${f/ppm/bmp}; \
+	done
 
 convert-video:
 	@echo "Converting frames to BMP"

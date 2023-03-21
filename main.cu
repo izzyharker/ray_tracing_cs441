@@ -13,7 +13,6 @@
 #include "triangle.h"
 #include "rotate.h"
 
-
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
 void check_cuda(cudaError_t result, char const *const func, const char *const file, int const line) {
     if (result) {
@@ -25,6 +24,8 @@ void check_cuda(cudaError_t result, char const *const func, const char *const fi
     }
 }
 
+
+// the actual ray tracing part of it - attenuating color
 __device__ vec3 color(const ray& r, hitable **world, spotlight ** light, curandState *local_rand_state) {
     ray cur_ray = r;
     vec3 cur_attenuation = vec3(1.0,1.0,1.0);
@@ -50,6 +51,7 @@ __device__ vec3 color(const ray& r, hitable **world, spotlight ** light, curandS
     return cur_attenuation; // exceeded recursion
 }
 
+// set up random
 __global__ void render_init(int nx, int ny, curandState *state) {
     // set up random values for pixels
     int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -60,7 +62,7 @@ __global__ void render_init(int nx, int ny, curandState *state) {
     curand_init(1984, pixel_index, 0, &state[pixel_index]);
 }
 
-// render
+// render - this one is the main kernel
 __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hitable ** world, spotlight **light, curandState *state) {
     int i = threadIdx.x + blockIdx.x * blockDim.x;
     int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -153,12 +155,15 @@ void write_image(std::string filename, vec3 *fb, int nx, int ny) {
 }
 
 int main() {
-    // int nx = 600;
-    // int ny = 300;
-    // int ns = 10;
+    #ifdef HIGHDEF
     int nx = 1850;
     int ny = 1000;
     int ns = 200;
+    #else
+    int nx = 600;
+    int ny = 300;
+    int ns = 10;
+    #endif
     int tx = 16;
     int ty = 32;
 
@@ -197,9 +202,13 @@ int main() {
 
     render_init<<<blocks, threads>>>(nx, ny, d_rand_state);
 
-    int i = 150;
+    #ifdef IMAGE
+    int i = 0;
+    #endif
     // in for loop 
-    // for (int i = 0; i < 240; i++) {
+    #ifndef IMAGE
+    for (int i = 0; i < 240; i++) {
+    #endif
         float angle = float(i)*1.5f;
 
         create_pyramid<<<1, 1>>>(d_list, d_world, num_hitables, angle);
@@ -212,16 +221,21 @@ int main() {
         checkCudaErrors(cudaDeviceSynchronize());
 
         char filename[25];
-        // sprintf(filename, "video/frame%04d.ppm", i);
+        #ifndef IMAGE
+        sprintf(filename, "video/frame%04d.ppm", i);
+        #else
         sprintf(filename, "frame%04d.ppm", i);
+        #endif
         write_image(filename, fb, nx, ny);
 
-        if (i % 20 == 0) std::cout << "wrote frame " << i << std::endl;
+        // if (i % 20 == 0) std::cout << "wrote frame " << i << std::endl;
 
         free_world<<<1, 1>>>(d_list, d_world, num_hitables);
         checkCudaErrors(cudaDeviceSynchronize());
         // end for loop
-    // }
+    #ifndef IMAGE
+    }
+    #endif
 
     // clean up
     checkCudaErrors(cudaDeviceSynchronize());

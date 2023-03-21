@@ -4,6 +4,11 @@
 #include "hitable.h"
 #include "ray.h"
 
+
+/*
+rotate a hitable object around the respective axis (x, y, z) - actually move the input rays,
+not the objects
+*/
 class x_rotate : public hitable {
     public:
         __device__ x_rotate(hitable *p, float angle, bool r = true) : ptr(p) {
@@ -131,6 +136,10 @@ __device__ bool z_rotate::hit(const ray& r, float t0, float t1, hit_record& rec)
     return false;
 }
 
+
+/*
+translate an object
+*/
 class translate : public hitable {
     public:
         __device__ translate(hitable *p, const vec3 off) : ptr(p), offset(off) {};
